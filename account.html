@@ -3,18 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Account - Private Chat</title>
+  <title>Account - Media Vault</title>
   <link rel="stylesheet" href="css/style.css">
 
-  <!-- 1. Load Supabase SDK First -->
+  <!-- Supabase SDK & Auth Script -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- 2. Load Auth Protection Script Second -->
   <script src="js/auth.js"></script>
 </head>
 <body>
 
   <header>
-    <h2>Private Chat</h2>
+    <h2>Media Vault</h2>
     <nav>
       <a href="index.html">Home</a>
       <a href="movies.html">Movies</a>
@@ -27,7 +26,7 @@
 
   <main class="container">
     <h1 id="profileHeader">My Profile</h1>
-    <p style="margin-bottom: 2rem;">Manage and view your submitted reviews.</p>
+    <p style="margin-bottom: 2rem;">Manage and view submitted reviews.</p>
 
     <!-- Tab Selection -->
     <div class="tab-container" style="margin-bottom: 1.5rem;">
@@ -37,29 +36,30 @@
 
     <!-- Review Stream -->
     <div id="userReviewsList">
-      <p>Loading your reviews...</p>
+      <p>Loading reviews...</p>
     </div>
   </main>
 
   <script>
     let activeTab = 'movie';
 
-    // Read viewed user from URL or default to the logged-in user session
+    // Check if viewing another user's profile via query parameter (?user=Username)
     const urlParams = new URLSearchParams(window.location.search);
     const viewedUser = urlParams.get('user');
 
-    async function loadAccountPage() {
-      // If viewing another profile via URL parameter (?user=Alex)
+    async function initAccountPage() {
+      // Determine target username: URL parameter OR currently logged-in user profile
       let targetUsername = viewedUser;
 
-      // Otherwise, fallback to currently authenticated session user from js/auth.js
-      if (!targetUsername && currentUserProfile) {
+      if (!targetUsername && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
         targetUsername = currentUserProfile.username;
       }
 
       if (targetUsername) {
         document.getElementById('profileHeader').textContent = `@${targetUsername}'s Profile`;
         fetchUserReviews(targetUsername);
+      } else {
+        document.getElementById('userReviewsList').innerHTML = '<p>User profile not found.</p>';
       }
     }
 
@@ -67,7 +67,7 @@
       activeTab = type;
       document.getElementById('movieTabBtn').classList.toggle('active', type === 'movie');
       document.getElementById('gameTabBtn').classList.toggle('active', type === 'game');
-      
+
       const targetUsername = viewedUser || (currentUserProfile ? currentUserProfile.username : null);
       if (targetUsername) {
         fetchUserReviews(targetUsername);
@@ -114,9 +114,9 @@
       `).join('');
     }
 
-    // Wait briefly for js/auth.js to establish the session before running
+    // Wait for auth session initialization from js/auth.js
     window.addEventListener('DOMContentLoaded', () => {
-      setTimeout(loadAccountPage, 300);
+      setTimeout(initAccountPage, 300);
     });
   </script>
 </body>
