@@ -3,8 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Account - Private Chat</title>
+  <title>Account - Private Chat</title>
   <link rel="stylesheet" href="css/style.css">
+
+  <!-- 1. Load Supabase SDK First -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- 2. Load Auth Protection Script Second -->
+  <script src="js/auth.js"></script>
 </head>
 <body>
 
@@ -25,59 +30,94 @@
     <p style="margin-bottom: 2rem;">Manage and view your submitted reviews.</p>
 
     <!-- Tab Selection -->
-    <div class="tab-container">
-      <button class="tab-btn active" onclick="switchTab('movie')">Movie Reviews</button>
-      <button class="tab-btn" onclick="switchTab('game')">Game Reviews</button>
+    <div class="tab-container" style="margin-bottom: 1.5rem;">
+      <button class="tab-btn active" id="movieTabBtn" onclick="switchTab('movie')">Movie Reviews</button>
+      <button class="tab-btn" id="gameTabBtn" onclick="switchTab('game')">Game Reviews</button>
     </div>
 
     <!-- Review Stream -->
     <div id="userReviewsList">
-      <!-- Reviews load here -->
+      <p>Loading your reviews...</p>
     </div>
   </main>
 
   <script>
-    // Replace with logged-in user logic after Supabase setup
-    const currentUser = localStorage.getItem('username') || 'GuestUser';
-    document.getElementById('profileHeader').textContent = `${currentUser}'s Profile`;
+    let activeTab = 'movie';
 
-    // Local storage placeholder reviews for testing UI
-    const sampleReviews = JSON.parse(localStorage.getItem('userReviews')) || [
-      { id: '550', type: 'movie', title: 'Fight Club', rating: 5, comment: 'Amazing film!', date: '2026-03-01' },
-      { id: '3498', type: 'game', title: 'Grand Theft Auto V', rating: 4, comment: 'Great gameplay.', date: '2026-03-02' }
-    ];
+    // Read viewed user from URL or default to the logged-in user session
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewedUser = urlParams.get('user');
 
-    let currentTab = 'movie';
+    async function loadAccountPage() {
+      // If viewing another profile via URL parameter (?user=Alex)
+      let targetUsername = viewedUser;
 
-    function switchTab(type) {
-      currentTab = type;
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
-      renderReviews();
+      // Otherwise, fallback to currently authenticated session user from js/auth.js
+      if (!targetUsername && currentUserProfile) {
+        targetUsername = currentUserProfile.username;
+      }
+
+      if (targetUsername) {
+        document.getElementById('profileHeader').textContent = `@${targetUsername}'s Profile`;
+        fetchUserReviews(targetUsername);
+      }
     }
 
-    function renderReviews() {
-      const reviewsList = document.getElementById('userReviewsList');
-      const filtered = sampleReviews.filter(r => r.type === currentTab);
+    function switchTab(type) {
+      activeTab = type;
+      document.getElementById('movieTabBtn').classList.toggle('active', type === 'movie');
+      document.getElementById('gameTabBtn').classList.toggle('active', type === 'game');
+      
+      const targetUsername = viewedUser || (currentUserProfile ? currentUserProfile.username : null);
+      if (targetUsername) {
+        fetchUserReviews(targetUsername);
+      }
+    }
 
-      if (filtered.length === 0) {
-        reviewsList.innerHTML = `<p>No ${currentTab} reviews posted yet.</p>`;
+    async function fetchUserReviews(username) {
+      const container = document.getElementById('userReviewsList');
+      container.innerHTML = '<p>Loading reviews...</p>';
+
+      const { data: reviews, error } = await db
+        .from('reviews')
+        .select('*')
+        .eq('username', username)
+        .eq('item_type', activeTab)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Fetch error:', error);
+        container.innerHTML = '<p>Error loading reviews.</p>';
         return;
       }
 
-      reviewsList.innerHTML = filtered.map(r => `
-        <div class="review-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <h3>${r.title}</h3>
-            <span style="color: #f59e0b;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+      if (!reviews || reviews.length === 0) {
+        container.innerHTML = `<p>No ${activeTab} reviews posted yet by @${username}.</p>`;
+        return;
+      }
+
+      container.innerHTML = reviews.map(r => `
+        <div class="review-card" style="display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1rem; background: var(--card-bg, #1e293b); padding: 1rem; border-radius: 8px;">
+          ${r.item_image ? `<img src="${r.item_image}" alt="${r.item_title}" style="width: 70px; height: 100px; object-fit: cover; border-radius: 6px;">` : ''}
+          <div style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+              <h3 style="margin: 0;">${r.item_title}</h3>
+              <span style="color: #f59e0b;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+            </div>
+            <p style="margin: 0.5rem 0;">${r.comment}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <small style="color: gray;">Posted ${new Date(r.created_at).toLocaleDateString()}</small>
+              <a href="review.html?id=${r.item_id}&type=${r.item_type}" style="color: var(--accent-color); text-decoration: none; font-size: 0.9rem;">View Item Page →</a>
+            </div>
           </div>
-          <p>${r.comment}</p>
-          <a href="review.html?id=${r.id}&type=${r.type}" style="color: var(--accent-color); font-size: 0.9rem;">View Item Page</a>
         </div>
       `).join('');
     }
 
-    renderReviews();
+    // Wait briefly for js/auth.js to establish the session before running
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(loadAccountPage, 300);
+    });
   </script>
 </body>
 </html>
