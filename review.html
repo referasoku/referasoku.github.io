@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Review & Rating - Private Chat</title>
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -15,6 +16,8 @@
       <a href="movies.html">Movies</a>
       <a href="games.html">Games</a>
       <a href="feed.html">Feed</a>
+      <a href="users.html">Users</a>
+      <a href="account.html">Account</a>
     </nav>
   </header>
 
@@ -64,7 +67,14 @@
   </main>
 
   <script>
-    // 1. Read URL Parameters (?id=123&type=movie)
+    // 1. Initialize Supabase Client
+    // Replace these values with your actual details from Supabase Dashboard -> Project Settings -> API
+    const SUPABASE_URL = 'https://tpeqgjgeeyrepaijdcuj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwZXFnamdlZXlyZXBhaWpkY3VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1NzczMjMsImV4cCI6MjEwNDE1MzMyM30.YEAcpOlAiaFdYHniMZdzM684NYiF5fVPVXUaRGWraC4';
+    
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // 2. Read URL Parameters (?id=123&type=movie)
     const urlParams = new URLSearchParams(window.location.search);
     const itemId = urlParams.get('id');
     const itemType = urlParams.get('type'); // "movie" or "game"
@@ -75,8 +85,12 @@
     const itemDetail = document.getElementById('itemDetail');
     const reviewForm = document.getElementById('reviewForm');
     const reviewsList = document.getElementById('reviewsList');
+    const submitBtn = document.getElementById('submitBtn');
 
-    // 2. Fetch Item Information
+    let currentItemTitle = '';
+    let currentItemImage = '';
+
+    // 3. Fetch Item Information
     async function loadItemDetails() {
       if (!itemId || !itemType) {
         itemDetail.innerHTML = '<p>No item selected.</p>';
@@ -87,12 +101,19 @@
         if (itemType === 'movie') {
           const res = await fetch(`https://api.themoviedb.org/3/movie/${itemId}?api_key=${TMDB_API_KEY}`);
           const data = await res.json();
-          renderDetails(data.title, data.poster_path ? 'https://image.tmdb.org/t/p/w500' + data.poster_path : 'https://via.placeholder.com/200x300', data.overview);
+          currentItemTitle = data.title;
+          currentItemImage = data.poster_path ? 'https://image.tmdb.org/t/p/w500' + data.poster_path : 'https://via.placeholder.com/200x300';
+          renderDetails(currentItemTitle, currentItemImage, data.overview);
         } else if (itemType === 'game') {
           const res = await fetch(`https://api.rawg.io/api/games/${itemId}?key=${RAWG_API_KEY}`);
           const data = await res.json();
-          renderDetails(data.name, data.background_image || 'https://via.placeholder.com/200x300', data.description_raw || '');
+          currentItemTitle = data.name;
+          currentItemImage = data.background_image || 'https://via.placeholder.com/200x300';
+          renderDetails(currentItemTitle, currentItemImage, data.description_raw || '');
         }
+
+        // Fetch existing reviews for this specific item
+        fetchDatabaseReviews();
       } catch (err) {
         console.error(err);
         itemDetail.innerHTML = '<p>Error loading item details.</p>';
@@ -109,29 +130,86 @@
       `;
     }
 
-    // 3. Handle Form Submission
-    reviewForm.addEventListener('submit', (e) => {
+   // 4. Fetch Reviews from Supabase
+    async function fetchDatabaseReviews() {
+      reviewsList.innerHTML = '<p>Loading reviews...</p>';
+
+      const { data, error } = await db
+        .from('reviews')
+        .select('*')
+        .eq('item_id', itemId)
+        .eq('item_type', itemType)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Database Error:', error);
+        reviewsList.innerHTML = '<p>Could not load reviews.</p>';
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        reviewsList.innerHTML = '<p>No reviews yet. Be the first to leave one!</p>';
+        return;
+      }
+
+      reviewsList.innerHTML = data.map(r => `
+        <div class="review-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span class="review-author">${r.username}</span>
+            <span style="color: #f59e0b;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+          </div>
+          <p>${r.comment}</p>
+          <small style="color: gray;">${new Date(r.created_at).toLocaleDateString()}</small>
+        </div>
+      `).join('');
+    }
+
+    // 5. Submit New Review to Supabase
+    reviewForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Posting...';
 
       const username = document.getElementById('username').value.trim();
       const rating = document.querySelector('input[name="rating"]:checked').value;
       const comment = document.getElementById('comment').value.trim();
 
-      const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+      // Save username locally so user doesn't have to re-type it every time
+      localStorage.setItem('username', username);
 
-      // Temporary local UI append (Connect to Supabase/Firebase here in next step)
-      const reviewCard = document.createElement('div');
-      reviewCard.className = 'review-card';
-      reviewCard.innerHTML = `
-        <p class="review-author">${username} <span style="color: #f59e0b;">${stars}</span></p>
-        <p>${comment}</p>
-      `;
+      const { error } = await db.from('reviews').insert([
+        {
+          item_id: String(itemId),
+          item_type: itemType,
+          item_title: currentItemTitle,
+          item_image: currentItemImage,
+          username: username,
+          rating: parseInt(rating),
+          comment: comment
+        }
+      ]);
 
-      reviewsList.prepend(reviewCard);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Post Review';
 
-      // Reset form
+      if (error) {
+        console.error('Insert Error:', error);
+        alert('Failed to post review. Check your network or configuration.');
+        return;
+      }
+
       reviewForm.reset();
+      // Auto-fill username back in
+      document.getElementById('username').value = username;
+      // Refresh the reviews list from Supabase
+      fetchDatabaseReviews();
     });
+
+    // Auto-fill stored username if present
+    const savedUser = localStorage.getItem('username');
+    if (savedUser) {
+      document.getElementById('username').value = savedUser;
+    }
 
     loadItemDetails();
   </script>
