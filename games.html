@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, intial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Games - Private Chat</title>
     <link rel="stylesheet" href="css/style.css">
   </head>
@@ -20,8 +20,69 @@
 
     <main class="container">
       <h1>Game Catalog</h1>
-      <p>Game Database will appear here.</p>
+      <input type="text" id="gameSearch" class="search-input" placeholder="Search for a game...">
+
+      <p id="statusMessage" style="color: var(--accent-color); margin-top: 1rem;"></p>
+      
+      <div id="gameGrid" class="card-grid">
+        <!-- Search results will appear here -->
+      </div>
     </main>
 
+    <script>
+    // Get a free API key from https://rawg.io/apidocs
+    // If you intend on using this to make your own please get your own API Key
+      const RAWG_API_KEY = '5c9b18c14a3e4704bda05dfa828ccd86';
+
+      const searchInput = document.getElementById('gameSearch');
+      const gameGrid = document.getElementById('gameGrid');
+      const statusMessage = document.getElementById('statusMessage');
+
+      searchInput.addEventListener('input', async (e) => {
+        const query = e.target.value.trim();
+
+        if(query.length < 2) {
+          gameGrid.innerHTML = '';
+          statusMessage.textContent = '';
+          return;
+        }
+
+        statusMessage.textContent = 'Searching...';
+
+        try {
+          const url = `https://api.rawg.io/api/games?key=${RAWG_API_KEY}&search=${encodeURIComponent(query)}&page_size=12`;
+
+          const response = await fetch(url);
+
+          if(!response.ok) {
+            throw new Error(`API returned status ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (!data.results || data.results.length === 0) {
+            statusMessage.textContent = 'No games found.';
+            gameGrid.innerHTML = '';
+            return;
+          }
+
+          statusMessage.textContent = '';
+
+          gameGrid.innerHTML = data.results.map(game => `
+            <div class= 'card'>
+              <img src="${game.background_image ? game.background_image : 'https://via.placeholder.com/200x300'}" alt="${game.name}">
+              <h3>${game.name}</h3>
+              <p>Rating: ⭐ ${game.rating ? game.rating : 'N/A'}</p>
+              <a href="review.html?id=${game.id}&type=game" style="color: var(--accent-color);">Reviews & Ratings</a>
+            </div>
+          `).join('');
+
+        } catch (err) {
+          console.error('Fetch error:', err);
+          statusMessage.textContent = 'Failed to load search results. Check your API key or connection.';
+        }
+      });
+    </script>
+    
   </body>
 </html>
