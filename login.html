@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - LoreVault</title>
   <link rel="stylesheet" href="css/style.css">
+  
+  <!-- Supabase SDK & Bad Words Filter -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bad-words@3.0.4/lib/badwords.min.js"></script>
 </head>
 <body>
 
@@ -56,6 +59,10 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwZXFnamdlZXlyZXBhaWpkY3VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1NzczMjMsImV4cCI6MjEwNDE1MzMyM30.YEAcpOlAiaFdYHniMZdzM684NYiF5fVPVXUaRGWraC4';
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // Initialize Profanity Filter & Reserved Names
+    const filter = new Filter();
+    const reservedNames = ['admin', 'administrator', 'mod', 'moderator', 'lorevault', 'system', 'support', 'root'];
+
     let mode = 'login';
 
     function toggleAuth(selectedMode) {
@@ -65,6 +72,35 @@
       document.getElementById('showLoginBtn').classList.toggle('active', mode === 'login');
       document.getElementById('showSignupBtn').classList.toggle('active', mode === 'signup');
       document.getElementById('authError').textContent = '';
+    }
+
+    // Front-End Username Validation Function
+    function isValidUsername(username) {
+      const errorDisplay = document.getElementById('authError');
+      errorDisplay.textContent = '';
+
+      if (username.length < 3 || username.length > 20) {
+        errorDisplay.textContent = 'Username must be between 3 and 20 characters.';
+        return false;
+      }
+
+      const validPattern = /^[a-zA-Z0-9_]+$/;
+      if (!validPattern.test(username)) {
+        errorDisplay.textContent = 'Username can only contain letters, numbers, and underscores.';
+        return false;
+      }
+
+      if (reservedNames.includes(username.toLowerCase())) {
+        errorDisplay.textContent = 'This username is reserved. Please choose another.';
+        return false;
+      }
+
+      if (filter.isProfane(username)) {
+        errorDisplay.textContent = 'Username contains inappropriate language. Please choose another.';
+        return false;
+      }
+
+      return true;
     }
 
     // Handle Login
@@ -87,6 +123,11 @@
       const username = document.getElementById('signupUsername').value.trim();
       const email = document.getElementById('signupEmail').value;
       const password = document.getElementById('signupPassword').value;
+
+      // Validate username rules before proceeding to Supabase
+      if (!isValidUsername(username)) {
+        return;
+      }
 
       const { data, error } = await db.auth.signUp({
         email,
