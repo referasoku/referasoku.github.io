@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Account - Private Chat</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header>
+    <h2>Private Chat</h2>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="movies.html">Movies</a>
+      <a href="games.html">Games</a>
+      <a href="feed.html">Feed</a>
+      <a href="users.html">Users</a>
+      <a href="account.html" class="active">Account</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <h1 id="profileHeader">My Profile</h1>
+    <p style="margin-bottom: 2rem;">Manage and view your submitted reviews.</p>
+
+    <!-- Tab Selection -->
+    <div class="tab-container">
+      <button class="tab-btn active" onclick="switchTab('movie')">Movie Reviews</button>
+      <button class="tab-btn" onclick="switchTab('game')">Game Reviews</button>
+    </div>
+
+    <!-- Review Stream -->
+    <div id="userReviewsList">
+      <!-- Reviews load here -->
+    </div>
+  </main>
+
+  <script>
+    // Replace with logged-in user logic after Supabase setup
+    const currentUser = localStorage.getItem('username') || 'GuestUser';
+    document.getElementById('profileHeader').textContent = `${currentUser}'s Profile`;
+
+    // Local storage placeholder reviews for testing UI
+    const sampleReviews = JSON.parse(localStorage.getItem('userReviews')) || [
+      { id: '550', type: 'movie', title: 'Fight Club', rating: 5, comment: 'Amazing film!', date: '2026-03-01' },
+      { id: '3498', type: 'game', title: 'Grand Theft Auto V', rating: 4, comment: 'Great gameplay.', date: '2026-03-02' }
+    ];
+
+    let currentTab = 'movie';
+
+    function switchTab(type) {
+      currentTab = type;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      renderReviews();
+    }
+
+    function renderReviews() {
+      const reviewsList = document.getElementById('userReviewsList');
+      const filtered = sampleReviews.filter(r => r.type === currentTab);
+
+      if (filtered.length === 0) {
+        reviewsList.innerHTML = `<p>No ${currentTab} reviews posted yet.</p>`;
+        return;
+      }
+
+      reviewsList.innerHTML = filtered.map(r => `
+        <div class="review-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h3>${r.title}</h3>
+            <span style="color: #f59e0b;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+          </div>
+          <p>${r.comment}</p>
+          <a href="review.html?id=${r.id}&type=${r.type}" style="color: var(--accent-color); font-size: 0.9rem;">View Item Page</a>
+        </div>
+      `).join('');
+    }
+
+    renderReviews();
+  </script>
+</body>
+</html>
