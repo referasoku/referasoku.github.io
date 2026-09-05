@@ -206,4 +206,46 @@ nav a:hover, nav a.active {
 .btn-review:hover {
   opacity: 0.9;
 }
-  
+
+/* Container hides overflowing posters */
+.marquee-container {
+  width: 100%;
+  overflow: hidden;
+  background: #111;
+  padding: 15px 0;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Flex track that shifts horizontally */
+.marquee-track {
+  display: flex;
+  gap: 15px;
+  width: max-content;
+  animation: scrollMarquee 45s linear infinite;
+}
+
+/* Poster styling */
+.marquee-track img {
+  width: 130px;
+  height: 190px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+  transition: transform 0.2s ease;
+}
+
+/* Pause marquee when hovered */
+.marquee-container:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Keyframe movement */
+@keyframes scrollMarquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
