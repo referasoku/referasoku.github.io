@@ -81,4 +81,113 @@ nav a:hover, nav a.active {
   box-sizing: border-box;
   display: block; /* Guarantees visibility */
 }
+
+/* Review Page Layout */
+.detail-header {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.detail-poster {
+  width: 200px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.detail-info {
+  flex: 1;
+  min-width: 250px;
+}
+
+.review-form {
+  background-color: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 2rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.form-input, .form-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Interactive Star Rating Selector */
+.star-rating {
+  display: flex;
+  direction: rtl; /* Allows simple CSS hover/checked logic */
+  justify-content: flex-end;
+  gap: 0.25rem;
+  max-width: fit-content;
+}
+
+.star-rating input {
+  display: none;
+}
+
+.star-rating label {
+  font-size: 1.75rem;
+  color: var(--border-color);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.star-rating label:hover,
+.star-rating label:hover ~ label,
+.star-rating input:checked ~ label {
+  color: #f59e0b; /* Amber Gold */
+}
+
+.btn-submit {
+  background-color: var(--accent-color);
+  color: #0f172a;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-submit:hover {
+  opacity: 0.9;
+}
+
+/* existing reviews list */
+.review-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.review-author {
+  font-weight: bold;
+  color: var(--accent-color);
+}
+
+
   
