@@ -73,7 +73,7 @@
               <img src="${game.background_image ? game.background_image : 'https://via.placeholder.com/200x300'}" alt="${game.name}">
               <h3>${game.name}</h3>
               <p>Rating: ⭐ ${game.rating ? game.rating : 'N/A'}</p>
-              <a href="review.html?id=${game.id}&type=game" style="color: var(--accent-color);">Reviews & Ratings</a>
+              <a href="review.html?id=${game.id}&type=game" class="btn-review">Reviews & Ratings</a>
             </div>
           `).join('');
 
