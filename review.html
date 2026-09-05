@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review & Rating - Private Chat</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header>
+    <h2>Private Chat</h2>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="movies.html">Movies</a>
+      <a href="games.html">Games</a>
+      <a href="feed.html">Feed</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- Dynamic Header Info (Image + Title) -->
+    <div id="itemDetail" class="detail-header">
+      <p id="loadingText">Loading details...</p>
+    </div>
+
+    <!-- Review Submission Form -->
+    <section class="review-form">
+      <h2>Leave a Review</h2>
+      <form id="reviewForm">
+        
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" class="form-input" placeholder="Enter your username..." required>
+        </div>
+
+        <div class="form-group">
+          <label>Star Rating</label>
+          <div class="star-rating">
+            <input type="radio" id="star5" name="rating" value="5" required/><label for="star5">★</label>
+            <input type="radio" id="star4" name="rating" value="4"/><label for="star4">★</label>
+            <input type="radio" id="star3" name="rating" value="3"/><label for="star3">★</label>
+            <input type="radio" id="star2" name="rating" value="2"/><label for="star2">★</label>
+            <input type="radio" id="star1" name="rating" value="1"/><label for="star1">★</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="comment">Comment</label>
+          <textarea id="comment" class="form-textarea" placeholder="What did you think?" required></textarea>
+        </div>
+
+        <button type="submit" class="btn-submit">Post Review</button>
+      </form>
+    </section>
+
+    <!-- Member Reviews List -->
+    <section>
+      <h2>Member Reviews</h2>
+      <div id="reviewsList">
+        <!-- Reviews loaded here dynamically -->
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // 1. Read URL Parameters (?id=123&type=movie)
+    const urlParams = new URLSearchParams(window.location.search);
+    const itemId = urlParams.get('id');
+    const itemType = urlParams.get('type'); // "movie" or "game"
+
+    const TMDB_API_KEY = '564e6671b19d2797c76255a4aefc8ba6';
+    const RAWG_API_KEY = '5c9b18c14a3e4704bda05dfa828ccd86';
+
+    const itemDetail = document.getElementById('itemDetail');
+    const reviewForm = document.getElementById('reviewForm');
+    const reviewsList = document.getElementById('reviewsList');
+
+    // 2. Fetch Item Information
+    async function loadItemDetails() {
+      if (!itemId || !itemType) {
+        itemDetail.innerHTML = '<p>No item selected.</p>';
+        return;
+      }
+
+      try {
+        if (itemType === 'movie') {
+          const res = await fetch(`https://api.themoviedb.org/3/movie/${itemId}?api_key=${TMDB_API_KEY}`);
+          const data = await res.json();
+          renderDetails(data.title, data.poster_path ? 'https://image.tmdb.org/t/p/w500' + data.poster_path : 'https://via.placeholder.com/200x300', data.overview);
+        } else if (itemType === 'game') {
+          const res = await fetch(`https://api.rawg.io/api/games/${itemId}?key=${RAWG_API_KEY}`);
+          const data = await res.json();
+          renderDetails(data.name, data.background_image || 'https://via.placeholder.com/200x300', data.description_raw || '');
+        }
+      } catch (err) {
+        console.error(err);
+        itemDetail.innerHTML = '<p>Error loading item details.</p>';
+      }
+    }
+
+    function renderDetails(title, image, description) {
+      itemDetail.innerHTML = `
+        <img src="${image}" alt="${title}" class="detail-poster">
+        <div class="detail-info">
+          <h1>${title}</h1>
+          <p>${description ? description.slice(0, 300) + '...' : 'No description available.'}</p>
+        </div>
+      `;
+    }
+
+    // 3. Handle Form Submission
+    reviewForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value.trim();
+      const rating = document.querySelector('input[name="rating"]:checked').value;
+      const comment = document.getElementById('comment').value.trim();
+
+      const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+
+      // Temporary local UI append (Connect to Supabase/Firebase here in next step)
+      const reviewCard = document.createElement('div');
+      reviewCard.className = 'review-card';
+      reviewCard.innerHTML = `
+        <p class="review-author">${username} <span style="color: #f59e0b;">${stars}</span></p>
+        <p>${comment}</p>
+      `;
+
+      reviewsList.prepend(reviewCard);
+
+      // Reset form
+      reviewForm.reset();
+    });
+
+    loadItemDetails();
+  </script>
+</body>
+</html>
