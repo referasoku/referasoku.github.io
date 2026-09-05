@@ -103,29 +103,49 @@
       return true;
     }
 
-   // Handle Login
-  document.getElementById('loginForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
+    // Handle Login
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      // 1. Immediately halt default form submission for mobile WebKit
+      e.preventDefault();
 
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
+      // 2. Clear previous error messages
+      const errorElement = document.getElementById('authError');
+      if (errorElement) errorElement.textContent = '';
 
-  try {
-    const { data, error } = await db.auth.signInWithPassword({ email, password });
+      // 3. Force lowercasing and trim whitespace for mobile keyboards
+      const emailInput = document.getElementById('loginEmail');
+      const passwordInput = document.getElementById('loginPassword');
 
-    if (error) {
-      document.getElementById('authError').textContent = error.message;
-      return;
-    }
+      const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+      const password = passwordInput ? passwordInput.value : '';
 
-    // Safely redirect on mobile Safari without triggering reload loops
-    window.location.replace('index.html');
-  } catch (err) {
-    console.error('Login error:', err);
-    document.getElementById('authError').textContent = 'An unexpected error occurred. Please try again.';
-  }
-});
+      if (!email || !password) {
+        if (errorElement) errorElement.textContent = 'Please enter both email and password.';
+        return;
+      }
 
+      try {
+        // 4. Perform Supabase authentication
+        const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+        if (error) {
+          if (errorElement) errorElement.textContent = error.message;
+          return;
+        }
+
+        // 5. Short pause to ensure session token is written to Safari's localStorage before redirect
+        setTimeout(() => {
+          window.location.replace('index.html');
+        }, 100);
+
+      } catch (err) {
+        console.error('Login error:', err);
+        if (errorElement) {
+          errorElement.textContent = 'An unexpected error occurred. Please try again.';
+        }
+      }
+    });
+    
     // Handle Sign Up
     document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
