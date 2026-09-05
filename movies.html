@@ -20,8 +20,43 @@
 
     <main class="container">
       <h1>Movie Catalog</h1>
-      <p>Movie Database will appear here.</p>
+      <input type="text" id="movieSearch" class="search-input" placeholder="search for a movie...">
+
+      <div id="movieGrid" class="card-grid">
+        <!-- Search results will appear here -->
+      </div>
     </main>
 
+    <script>
+      //Using a free API key from https://www.themoviedb.org/
+      const TMDB_API_KEY = '564e6671b19d2797c76255a4aefc8ba6';
+
+      const searchInput = document.getElementById('movieSearch');
+      const movieGrid = document.getElementById('movieGrid');
+
+      searchInput.addEventListener('input', async (e) => {
+        const query = e.target.value.trim();
+        if (query.length < 2) {
+          movieGrid.innerHTML = '';
+          return;
+        }
+
+        try {
+          const response = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`);
+          const data = await response.json();
+
+          movieGrid.innerHTML = data.results.map(movie => `
+            <div class="card">
+              <img src="${movie.poster_path ? 'https://image.tmdb.org/t/p/w500' + movie.poster_path : 'https://via.placeholder.com/200x300'}" alt="${movie.title}">
+              <h3>${movie.title}</h3>
+              <p>Rating: ⭐ ${movie.vote_average}</p>
+              <a href="review.html?id=${movie.id}&type=movie" style="color: var(--accent-color);">Reviews & Ratings</a>
+            </div>
+          `).join('');
+          } catch (err) {
+            console.error('Error fetching movies:', err);
+          }
+        });
+    </script>
   </body>
 </html>
