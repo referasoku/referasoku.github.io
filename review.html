@@ -31,11 +31,6 @@
     <section class="review-form">
       <h2>Leave a Review</h2>
       <form id="reviewForm">
-        
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input type="text" id="username" class="form-input" placeholder="Enter your username..." required>
-        </div>
 
         <div class="form-group">
           <label>Star Rating</label>
@@ -164,18 +159,21 @@
       `).join('');
     }
 
-    // 5. Submit New Review to Supabase
+// 5. Submit New Review to Supabase
     reviewForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      // Ensure user profile is loaded from js/auth.js
+      if (!currentUserProfile) {
+        alert('You must be logged in to post a review.');
+        return;
+      }
+
       submitBtn.disabled = true;
       submitBtn.textContent = 'Posting...';
 
-      const username = document.getElementById('username').value.trim();
       const rating = document.querySelector('input[name="rating"]:checked').value;
       const comment = document.getElementById('comment').value.trim();
-
-      // Save username locally so user doesn't have to re-type it every time
-      localStorage.setItem('username', username);
 
       const { error } = await db.from('reviews').insert([
         {
@@ -183,7 +181,7 @@
           item_type: itemType,
           item_title: currentItemTitle,
           item_image: currentItemImage,
-          username: username,
+          username: currentUserProfile.username, // Automatically attached from Supabase Auth!
           rating: parseInt(rating),
           comment: comment
         }
@@ -199,17 +197,9 @@
       }
 
       reviewForm.reset();
-      // Auto-fill username back in
-      document.getElementById('username').value = username;
       // Refresh the reviews list from Supabase
       fetchDatabaseReviews();
     });
-
-    // Auto-fill stored username if present
-    const savedUser = localStorage.getItem('username');
-    if (savedUser) {
-      document.getElementById('username').value = savedUser;
-    }
 
     loadItemDetails();
   </script>
