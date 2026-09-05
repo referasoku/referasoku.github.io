@@ -1,29 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charsets="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Public Feed - Private Chat</title>
-    <link rel="stylesheet" href="css/style.css">
-  </head>
-  <body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activity Feed - Private Chat</title>
+  <link rel="stylesheet" href="css/style.css">
 
-    <header>
-      <h2>Private Chat</h2>
-      <nav>
-        <a href="index.html">Home</a>
-        <a href="movies.html">Movies</a>
-        <a href="games.html">Games</a>
-        <a href="feed.html" class="active">Feed</a>
-        <a href="users.html">Users</a>
-        <a href="account.html">Account</a>
-      </nav>
-    </header>
+  <!-- 1. Load Supabase SDK First -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- 2. Load Auth Protection Script Second -->
+  <script src="js/auth.js"></script>
+</head>
+<body>
 
-    <main class="container">
-      <h1>Public Feed</h1>
-      <p>Public posts and read-only updates will display here.</p>
-    </main>
+  <header>
+    <h2>Private Chat</h2>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="movies.html">Movies</a>
+      <a href="games.html">Games</a>
+      <a href="feed.html" class="active">Feed</a>
+      <a href="users.html">Users</a>
+      <a href="account.html">Account</a>
+    </nav>
+  </header>
 
-  </body>
+  <main class="container">
+    <h1>Member Activity Feed</h1>
+    <p>See what movies and games everyone is reviewing in real time.</p>
+
+    <!-- Filter Buttons -->
+    <div class="tab-container" style="margin-bottom: 1.5rem;">
+      <button class="tab-btn active" id="filterAllBtn" onclick="filterFeed('all')">All Activity</button>
+      <button class="tab-btn" id="filterMovieBtn" onclick="filterFeed('movie')">Movies Only</button>
+      <button class="tab-btn" id="filterGameBtn" onclick="filterFeed('game')">Games Only</button>
+    </div>
+
+    <!-- Feed Container -->
+    <div id="feedList">
+      <p>Loading member activity...</p>
+    </div>
+  </main>
+
+  <script>
+    let currentFilter = 'all';
+
+    // Switch between filter tabs
+    function filterFeed(type) {
+      currentFilter = type;
+
+      document.getElementById('filterAllBtn').classList.toggle('active', type === 'all');
+      document.getElementById('filterMovieBtn').classList.toggle('active', type === 'movie');
+      document.getElementById('filterGameBtn').classList.toggle('active', type === 'game');
+
+      fetchActivityFeed();
+    }
+
+    // Fetch latest reviews from Supabase
+    async function fetchActivityFeed() {
+      const feedContainer = document.getElementById('feedList');
+      feedContainer.innerHTML = '<p>Loading latest reviews...</p>';
+
+      let query = db
+        .from('reviews')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+      // Apply type filter if not 'all'
+      if (currentFilter !== 'all') {
+        query = query.eq('item_type', currentFilter);
+      }
+
+      const { data: reviews, error } = await query;
+
+      if (error) {
+        console.error('Error fetching feed:', error);
+        feedContainer.innerHTML = '<p>Error loading activity feed.</p>';
+        return;
+      }
+
+      if (!reviews || reviews.length === 0) {
+        feedContainer.innerHTML = '<p>No activity yet. Be the first to leave a review!</p>';
+        return;
+      }
+
+      feedContainer.innerHTML = reviews.map(r => `
+        <div class="review-card" style="display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1.5rem; background: var(--card-bg, #1e293b); padding: 1rem; border-radius: 8px;">
+          ${r.item_image ? `<img src="${r.item_image}" alt="${r.item_title}" style="width: 80px; height: 115px; object-fit: cover; border-radius: 6px;">` : ''}
+          <div style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+              <a href="account.html?user=${encodeURIComponent(r.username)}" style="color: var(--accent-color); font-weight: bold; text-decoration: none;">
+                @${r.username}
+              </a>
+              <span style="color: #f59e0b;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+            </div>
+
+            <p style="margin: 0.25rem 0; font-size: 0.9rem; color: #94a3b8;">
+              Reviewed <strong style="color: #f8fafc;">${r.item_title}</strong> (${r.item_type})
+            </p>
+
+            <p style="margin: 0.75rem 0;">${r.comment}</p>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+              <small style="color: #64748b;">${new Date(r.created_at).toLocaleString()}</small>
+              <a href="review.html?id=${r.item_id}&type=${r.item_type}" style="color: var(--accent-color); text-decoration: none; font-size: 0.85rem;">
+                View Item & Reviews →
+              </a>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Load feed on page open
+    fetchActivityFeed();
+  </script>
+</body>
 </html>
