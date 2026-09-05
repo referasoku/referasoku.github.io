@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users - Private Chat</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header>
+    <h2>Private Chat</h2>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="movies.html">Movies</a>
+      <a href="games.html">Games</a>
+      <a href="feed.html">Feed</a>
+      <a href="users.html" class="active">Users</a>
+      <a href="account.html">Account</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <h1>Find Members</h1>
+    <input type="text" id="userSearch" class="search-input" placeholder="Search by username...">
+
+    <p id="statusMessage" style="color: var(--accent-color); margin-top: 1rem;"></p>
+
+    <div id="usersList" class="user-list" style="margin-top: 1.5rem;">
+      <!-- Member search results will load here -->
+    </div>
+  </main>
+
+  <script>
+    const searchInput = document.getElementById('userSearch');
+    const usersList = document.getElementById('usersList');
+
+    // Demo data array - Connect to Supabase user table in next step
+    const mockUsers = ['Alex', 'Jordan', 'Sam_Gamer', 'MovieBuff99', 'Chris_P'];
+
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.trim().toLowerCase();
+
+      if (query.length === 0) {
+        usersList.innerHTML = '';
+        return;
+      }
+
+      const results = mockUsers.filter(user => user.toLowerCase().includes(query));
+
+      if (results.length === 0) {
+        usersList.innerHTML = '<p>No members found with that name.</p>';
+        return;
+      }
+
+      usersList.innerHTML = results.map(user => `
+        <div class="user-card">
+          <div>
+            <strong>${user}</strong>
+          </div>
+          <a href="account.html?user=${encodeURIComponent(user)}">View Reviews</a>
+        </div>
+      `).join('');
+    });
+  </script>
+</body>
+</html>
