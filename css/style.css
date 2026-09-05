@@ -79,5 +79,6 @@ nav a:hover, nav a.active {
   color: var(--text-color);
   font-size: 1rem;
   box-sizing: border-box;
+  display: block; /* Guarantees visibility */
 }
   
